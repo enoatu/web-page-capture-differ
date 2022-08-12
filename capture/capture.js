@@ -154,11 +154,12 @@ const capture = async (url, name, existSkip) => {
 }
 
 ;(async () => {
-  const name0 = argv.dirPrefix + 'result1/' + argv._[0].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  const dirPrefix = argv.dirPrefix ?? ''
+  const name0 = dirPrefix + 'result1/' + argv._[0].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
   await capture(argv._[0], name0, false)
-  const name1 = argv.dirPrefix + 'result3/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  const name1 = dirPrefix + 'result2/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
   await capture(argv._[1], name1, false)
-  const name2 = argv.dirPrefix + 'result-diff/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  const name2 = dirPrefix + 'result-diff/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
 
   logger.debug('prepared')
   const { execSync } = require('child_process')

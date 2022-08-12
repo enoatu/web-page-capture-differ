@@ -7,7 +7,7 @@ const { logger } = require('./logger')
 
 if (!argv._[0] || !argv._[1]) {
   logger.error(`arguments is invalid`)
-  exit()
+  process.exit(1)
 }
 
 let browser = null
@@ -52,8 +52,8 @@ const launch = async () => {
     ]
   })
 
-  logger.info('launched puppeteer')
-  logger.info('puppeteer running PID: ' + browser.process().pid + ' ENDPOINT:' + browser.wsEndpoint())
+  logger.debug('launched puppeteer')
+  logger.debug('puppeteer running PID: ' + browser.process().pid + ' ENDPOINT:' + browser.wsEndpoint())
 
   browser.on('disconnected', () => {
     logger.error(`puppeteer disconnected (count: ${++disconnectedCount}) try relaunch`)
@@ -87,13 +87,11 @@ const getPage = async () => {
   return page
 }
 
-const capture = async (url, name, existSkip) => {
-  if (existSkip && fs.existsSync(name)) {
-    return
-  }
-  const logPrefix = `capture`
+const capture = async (url, name, index) => {
+  logger.info(`starting capture${index}... ${url}`)
 
-  logger.info(JSON.stringify({
+  const logPrefix = `capture`
+  logger.debug(JSON.stringify({
     url,
     launchCount,
     disconnectedCount,
@@ -114,11 +112,7 @@ const capture = async (url, name, existSkip) => {
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 0 })
 
   await page.waitForSelector('body', { timeout: 0 })
-  logger.debug('waiting body')
   const body = await page.$('body')
-  logger.debug('waiting 2500ms')
-  await page.waitFor(1000)
-  logger.debug('start waiting images')
   // ブラウザ内処理
   await body.evaluate(() => {
     // 画像を待つように
@@ -143,28 +137,52 @@ const capture = async (url, name, existSkip) => {
     }
     return preLoad()
   })
-  logger.debug('finish waiting images')
   // XXX: cssのcontentのアイコンを待つなど対応する
-  await page.waitFor(1000)
+
+  const additionalWaitTime = Number(argv.additionalWaitTime) || 0
+  additionalWaitTime && await page.waitFor(additionalWaitTime)
 
   // キャプチャ
   arrayBuffer = await page.screenshot({ fullPage: true })
   fs.writeFileSync(name, arrayBuffer, 'binary');
-  logger.debug('fs.writed: ' + name)
+  logger.info(`finished capture${index}: ` + name.split('/').pop())
 }
 
 ;(async () => {
-  const dirPrefix = argv.dirPrefix ?? ''
-  const name0 = dirPrefix + 'result1/' + argv._[0].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
-  await capture(argv._[0], name0, false)
-  const name1 = dirPrefix + 'result2/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
-  await capture(argv._[1], name1, false)
-  const name2 = dirPrefix + 'result-diff/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  const dirPrefix     = argv.dirPrefix ?? ''
+  const result1Dir    = `../result/${dirPrefix}1`
+  const result2Dir    = `../result/${dirPrefix}2`
+  const resultDiffDir = `../result/${dirPrefix}diff`
+  // create dir IF NOT EXISTS
+  ;[result1Dir, result2Dir, resultDiffDir].forEach(dir => {
+    !fs.existsSync(dir) && fs.mkdirSync(dir);
+  })
 
-  logger.debug('prepared')
+  const name1 = result1Dir + '/' + argv._[0].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  if (argv.captureIfNotExist1 && fs.existsSync(name1)) {
+    logger.info('file1 is exist. Skip Capture')
+  } else {
+    await capture(argv._[0], name1, 1)
+  }
+
+  const name2 = result2Dir + '/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+  if (argv.captureIfNotExist2 && fs.existsSync(name2)) {
+    logger.info('file2 is exist. Skip Capture')
+  } else {
+    await capture(argv._[1], name2, 2)
+  }
+
+  const diffFilename = resultDiffDir + '/' + argv._[1].replaceAll(/[^a-zA-Z0-9]/ig, '_') + '.png'
+
   const { execSync } = require('child_process')
+  try {
+    execSync(`compare -metric AE ${name1} ${name2} ${diffFilename} 2>&1`)
+    logger.info('[RESULT]: No diff')
+    argv.outputOnlyDiff && fs.unlinkSync(diffFilename)
+  } catch (e) {
+    logger.debug(e)
+    logger.warn('[RESULT]: Have diff')
+  }
 
-  const stdout = execSync(`compare -metric AE ${name0} ${name1} ${name2}`)
-  console.log(`stdout: ${stdout.toString()}`)
   process.exit()
 })()

@@ -5,12 +5,14 @@ services:
     build: capture
     volumes:
       - ./capture:/node/app
-    command: "npm run capture"
+      - ./result:/node/result
     environment:
-      LOG_LEVEL: debug
+      LOG_LEVEL: info
       LOG_COLOR: 'true'
     init: true
     tty: true
+    ulimits:
+      memlock: -1
     logging:
       driver: "json-file"
       options:

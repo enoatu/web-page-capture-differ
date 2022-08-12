@@ -1,3 +1,4 @@
 capture/sitemap*
-capture/*result*
 .DS_Store
+result/
+!result/.gitkeep

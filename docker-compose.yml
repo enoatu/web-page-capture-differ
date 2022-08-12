@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+  capture:
+    user: node
+    build: capture
+    volumes:
+      - ./capture:/node/app
+    command: "npm run capture"
+    environment:
+      LOG_LEVEL: debug
+      LOG_COLOR: 'true'
+    init: true
+    tty: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: "5"
+

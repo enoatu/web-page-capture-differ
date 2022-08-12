@@ -1,0 +1,14 @@
+{
+  "name": "capture",
+  "version": "1.0.0",
+  "description": "capture",
+  "dependencies": {
+    "log4js": "^6.3.0",
+    "puppeteer": "^5.2.0",
+    "minimist": "^1.2.6"
+  },
+  "devDependencies": {},
+  "private": true,
+  "author": "",
+  "license": "MIT"
+}

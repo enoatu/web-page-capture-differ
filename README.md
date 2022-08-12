@@ -11,6 +11,10 @@ Capture two websites and compare their images by `puppeteer` And `imagemagick co
     ```
 
 3. See capture/result-diff
+- Red is diff
+
+![http___host_docker_internal_41210_change_indent](https://user-images.githubusercontent.com/30614453/184299591-57e2e974-2c66-45b7-a630-20c1f970dee5.png)
+
 
 ## options
 - -w or --width: viewport width
